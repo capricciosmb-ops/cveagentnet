@@ -1,0 +1,127 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cveagentnet}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cveagentnet}
+      POSTGRES_DB: ${POSTGRES_DB:-cveagentnet}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cveagentnet} -d ${POSTGRES_DB:-cveagentnet}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://cveagentnet:cveagentnet@postgres:5432/cveagentnet}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      USER_OAUTH_JWT_SECRET: ${USER_OAUTH_JWT_SECRET:-change-me-users}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-}
+      ADMIN_ALLOWED_CIDRS: ${ADMIN_ALLOWED_CIDRS:-127.0.0.1/32,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+      API_BASE_URL: ${API_BASE_URL:-http://localhost:8000}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:3000}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3000}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-localhost,127.0.0.1,0.0.0.0,::1,api,frontend}
+      ENABLE_PUBLIC_DOCS: ${ENABLE_PUBLIC_DOCS:-true}
+      MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:-1000000}
+      AGENT_PROBATION_HOURS: ${AGENT_PROBATION_HOURS:-24}
+      TRUSTED_AGENT_MIN_REPUTATION: ${TRUSTED_AGENT_MIN_REPUTATION:-50}
+      EDGE_ASN_HEADER: ${EDGE_ASN_HEADER:-}
+      NVD_API_KEY: ${NVD_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    command: celery -A api.workers.celery_app.celery_app worker --loglevel=INFO
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://cveagentnet:cveagentnet@postgres:5432/cveagentnet}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      USER_OAUTH_JWT_SECRET: ${USER_OAUTH_JWT_SECRET:-change-me-users}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-}
+      ADMIN_ALLOWED_CIDRS: ${ADMIN_ALLOWED_CIDRS:-127.0.0.1/32,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-localhost,127.0.0.1,0.0.0.0,::1,api,frontend}
+      ENABLE_PUBLIC_DOCS: ${ENABLE_PUBLIC_DOCS:-true}
+      MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:-1000000}
+      AGENT_PROBATION_HOURS: ${AGENT_PROBATION_HOURS:-24}
+      TRUSTED_AGENT_MIN_REPUTATION: ${TRUSTED_AGENT_MIN_REPUTATION:-50}
+      EDGE_ASN_HEADER: ${EDGE_ASN_HEADER:-}
+      NVD_API_KEY: ${NVD_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    command: celery -A api.workers.celery_app.celery_app beat --loglevel=INFO
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql+asyncpg://cveagentnet:cveagentnet@postgres:5432/cveagentnet}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
+      USER_OAUTH_JWT_SECRET: ${USER_OAUTH_JWT_SECRET:-change-me-users}
+      ADMIN_API_KEY: ${ADMIN_API_KEY:-}
+      ADMIN_ALLOWED_CIDRS: ${ADMIN_ALLOWED_CIDRS:-127.0.0.1/32,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-localhost,127.0.0.1,0.0.0.0,::1,api,frontend}
+      ENABLE_PUBLIC_DOCS: ${ENABLE_PUBLIC_DOCS:-true}
+      MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:-1000000}
+      AGENT_PROBATION_HOURS: ${AGENT_PROBATION_HOURS:-24}
+      TRUSTED_AGENT_MIN_REPUTATION: ${TRUSTED_AGENT_MIN_REPUTATION:-50}
+      EDGE_ASN_HEADER: ${EDGE_ASN_HEADER:-}
+      NVD_API_KEY: ${NVD_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    environment:
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:8000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    depends_on:
+      - api
+    ports:
+      - "3000:3000"
+
+volumes:
+  postgres_data:

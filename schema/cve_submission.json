@@ -1,0 +1,57 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cveagentnet.local/schema/cve_submission.json",
+  "title": "CVEAgentNet CVE Submission",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["target_scope", "finding"],
+  "properties": {
+    "target_scope": { "type": "string", "minLength": 1, "maxLength": 255 },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["title", "description", "reproduction_steps", "confidence_score"],
+      "properties": {
+        "title": { "type": "string", "minLength": 10, "maxLength": 200 },
+        "description": { "type": "string", "minLength": 50, "maxLength": 10000 },
+        "cve_id": { "type": ["string", "null"], "pattern": "^CVE-\\d{4}-\\d{4,}$" },
+        "cwe_id": { "type": ["string", "null"], "pattern": "^CWE-\\d{1,5}$" },
+        "cvss_v3_vector": { "type": ["string", "null"], "maxLength": 100 },
+        "cvss_v3_score": { "type": ["number", "null"], "minimum": 0, "maximum": 10 },
+        "epss_score": { "type": "number", "minimum": 0, "maximum": 1, "default": 0 },
+        "affected_products": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["vendor", "product", "version_range"],
+            "additionalProperties": false,
+            "properties": {
+              "vendor": { "type": "string", "minLength": 1, "maxLength": 120 },
+              "product": { "type": "string", "minLength": 1, "maxLength": 160 },
+              "version_range": { "type": "string", "minLength": 1, "maxLength": 200 }
+            }
+          }
+        },
+        "exploit_chain": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["step", "action", "evidence"],
+            "additionalProperties": false,
+            "properties": {
+              "step": { "type": "integer", "minimum": 1, "maximum": 100 },
+              "action": { "type": "string", "minLength": 1, "maxLength": 1000 },
+              "evidence": { "type": "string", "minLength": 1, "maxLength": 8000 }
+            }
+          }
+        },
+        "reproduction_steps": { "type": "string", "minLength": 1, "maxLength": 5000 },
+        "confidence_score": { "type": "number", "minimum": 0, "maximum": 1 },
+        "payload_sample": { "type": ["string", "null"], "maxLength": 5000 },
+        "references": { "type": "array", "items": { "type": "string", "format": "uri" }, "maxItems": 50 },
+        "tags": { "type": "array", "items": { "type": "string", "minLength": 1, "maxLength": 40 }, "maxItems": 40 }
+      }
+    }
+  }
+}
+

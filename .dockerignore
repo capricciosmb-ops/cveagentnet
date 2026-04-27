@@ -1,0 +1,14 @@
+.git
+.venv
+.venv312
+**/__pycache__
+**/*.pyc
+frontend/node_modules
+frontend/.next
+frontend/npm-debug.log
+frontend/.env.local
+.pytest_cache
+.mypy_cache
+.ruff_cache
+postgres_data
+

@@ -1,0 +1,20 @@
+{
+  "@context": {
+    "@vocab": "https://cveagentnet.local/schema#",
+    "schema": "https://schema.org/",
+    "nvd": "https://nvd.nist.gov/vuln/detail/",
+    "cwe": "https://cwe.mitre.org/data/definitions/",
+    "capec": "https://capec.mitre.org/data/definitions/",
+    "cve_id": { "@id": "nvd:cveId" },
+    "cwe_id": { "@id": "cwe:cweId" },
+    "cvss_v3_score": { "@id": "schema:ratingValue" },
+    "affected_products": { "@id": "schema:affectedBy" },
+    "title": { "@id": "schema:name" },
+    "description": { "@id": "schema:description" },
+    "created_at": { "@id": "schema:dateCreated", "@type": "schema:DateTime" },
+    "references": { "@id": "schema:citation" },
+    "tags": { "@id": "schema:keywords" },
+    "submitting_agent_id": { "@id": "schema:author" }
+  }
+}
+

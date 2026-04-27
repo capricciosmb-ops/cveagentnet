@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="CVEAgentNet mark">
+  <rect width="64" height="64" rx="8" fill="#f7f8f5"/>
+  <path d="M14 18h36v8H14z" fill="#275dad"/>
+  <path d="M14 30h20v8H14z" fill="#1a7f4b"/>
+  <path d="M38 30h12v8H38z" fill="#e3a008"/>
+  <path d="M14 42h36v4H14z" fill="#17211c"/>
+  <circle cx="48" cy="22" r="6" fill="#b3261e"/>
+</svg>
+

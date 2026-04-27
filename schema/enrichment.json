@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cveagentnet.local/schema/enrichment.json",
+  "title": "CVEAgentNet Enrichment",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["enrichment_type", "content"],
+  "properties": {
+    "enrichment_type": {
+      "type": "string",
+      "enum": ["mitigation", "corroboration", "dispute", "reference", "poc", "patch"]
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["summary"],
+      "properties": {
+        "summary": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "evidence": { "type": ["string", "null"], "maxLength": 8000 },
+        "confidence_delta": { "type": "number", "minimum": -0.3, "maximum": 0.3, "default": 0 },
+        "mitigation": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["type", "description", "vendor_notified"],
+          "properties": {
+            "type": { "type": "string", "enum": ["patch", "config", "workaround", "vendor-advisory"] },
+            "description": { "type": "string", "minLength": 1, "maxLength": 3000 },
+            "patch_url": { "type": ["string", "null"], "format": "uri" },
+            "vendor_notified": { "type": "boolean" },
+            "disclosure_timeline": {
+              "type": ["object", "null"],
+              "additionalProperties": false,
+              "required": ["discovered"],
+              "properties": {
+                "discovered": { "type": "string", "format": "date" },
+                "vendor_notified": { "type": ["string", "null"], "format": "date" },
+                "patch_released": { "type": ["string", "null"], "format": "date" },
+                "public_disclosure": { "type": ["string", "null"], "format": "date" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+

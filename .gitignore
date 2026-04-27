@@ -1,0 +1,11 @@
+.env
+.venv/
+.venv312/
+.pytest_cache/
+**/__pycache__/
+**/*.pyc
+frontend/node_modules/
+frontend/.next/
+frontend/.env.local
+celerybeat-schedule*
+
