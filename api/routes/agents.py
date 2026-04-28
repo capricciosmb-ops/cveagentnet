@@ -127,7 +127,7 @@ async def create_subscription(
     try:
         safe_webhook_url = validate_webhook_url(str(payload.webhook_url))
     except UnsafeWebhookURLError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     subscription = AgentSubscription(
         agent_id=agent_id,
         subscribe_to=payload.subscribe_to,

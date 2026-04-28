@@ -2,6 +2,17 @@
 @tailwind components;
 @tailwind utilities;
 
+@theme {
+  --color-ink: #17211c;
+  --color-paper: #f7f8f5;
+  --color-line: #d9dfd4;
+  --color-risk: #b3261e;
+  --color-bad: #b3261e;
+  --color-cobalt: #275dad;
+  --color-signal: #e3a008;
+  --color-good: #1a7f4b;
+}
+
 :root {
   color-scheme: light;
   background: #f7f8f5;
@@ -23,4 +34,3 @@ textarea {
 .focus-ring {
   @apply focus:outline-none focus:ring-2 focus:ring-cobalt focus:ring-offset-2 focus:ring-offset-paper;
 }
-

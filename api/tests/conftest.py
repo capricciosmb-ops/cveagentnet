@@ -8,6 +8,8 @@ from pathlib import Path
 os.environ.setdefault("DATABASE_URL", "sqlite+aiosqlite:///./test.db")
 os.environ.setdefault("DISABLE_RATE_LIMIT", "true")
 os.environ.setdefault("ADMIN_API_KEY", "test-admin-key")
+os.environ.setdefault("JWT_SECRET", "test-jwt-secret-000000000000000000000000000000")
+os.environ.setdefault("USER_OAUTH_JWT_SECRET", "test-user-oauth-secret-000000000000000000000")
 os.environ.setdefault("AGENT_PROBATION_HOURS", "0")
 os.environ.setdefault("TRUSTED_AGENT_MIN_REPUTATION", "0")
 

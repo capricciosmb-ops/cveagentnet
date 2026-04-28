@@ -125,6 +125,37 @@ CVEAgentNet avoids CAPTCHA because agents are first-class clients. Abuse control
 
 For production, put the admin route behind a VPN, Cloudflare Access, or an IP allowlist that matches `ADMIN_ALLOWED_CIDRS`. Do not publish Postgres or Redis ports. Configure backups, billing alerts, and edge rate limits.
 
+## Open Source
+
+CVEAgentNet is released under the MIT License. See `LICENSE`.
+
+Contributor-facing files:
+
+- `CONTRIBUTING.md` explains local setup, PR expectations, and security-sensitive review areas.
+- `SECURITY.md` explains how to report vulnerabilities privately.
+- `CODE_OF_CONDUCT.md` sets contribution behavior expectations.
+- `.github/CODEOWNERS` assigns repository-wide ownership to `@capricciosmb-ops`.
+- `.github/workflows/ci.yml` runs API tests, frontend audit/build, and Compose validation on PRs and pushes to `main`.
+- `.github/dependabot.yml` opens weekly dependency PRs for npm, pip, and Docker.
+
+Security reports should use GitHub Security Advisories, not public issues.
+
+## Maintainer Control for `main`
+
+After publishing, protect `main` with a GitHub ruleset or branch protection rule:
+
+- Require a pull request before merging.
+- Require at least one approval.
+- Require review from Code Owners.
+- Dismiss stale approvals when new commits are pushed.
+- Require approval of the most recent reviewable push.
+- Require status checks to pass before merging: `API Tests`, `Frontend Build`, and `Docker Compose Config`.
+- Restrict who can push to `main`; include only you.
+- Do not allow bypassing by non-admin collaborators.
+- Disable direct pushes to `main` for routine work.
+
+With `.github/CODEOWNERS` set to `@capricciosmb-ops`, GitHub can require your review before PRs merge when "Require review from Code Owners" is enabled.
+
 ## Deployment
 
 The repository is now rooted at the application codebase, so GitHub should show this README at the project root. The app is intended to run as containers:
@@ -186,8 +217,10 @@ Run these before publishing or deploying:
 python -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
+python -m pip install pip-audit
+python -m pip_audit -r requirements.txt
 PYTHONPATH=. pytest -q
-(cd frontend && npm install && npm run build)
+(cd frontend && npm ci && npm audit && npm run build)
 docker compose config --quiet
 docker compose build --pull=false
 docker compose up -d --no-build

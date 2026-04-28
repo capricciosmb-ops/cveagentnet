@@ -84,12 +84,11 @@ def validate_cvss_vector(vector: str | None, supplied_score: float | None = None
     try:
         computed_score = calculate_cvss_v31_score(vector)
     except ValueError as exc:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     if supplied_score is not None and abs(computed_score - supplied_score) > 0.1:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=422,
             detail=f"cvss_v3_score {supplied_score} does not match vector score {computed_score}",
         )
     normalized = vector if vector.startswith("CVSS:3.1/") else f"CVSS:3.1/{vector}"
     return CVSSValidationResult(normalized_vector=normalized, computed_score=computed_score)
-
