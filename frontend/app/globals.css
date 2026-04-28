@@ -1,6 +1,7 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@source "./**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
 
 @theme {
   --color-ink: #17211c;
