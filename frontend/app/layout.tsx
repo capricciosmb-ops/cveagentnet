@@ -11,19 +11,21 @@ export const metadata: Metadata = {
 };
 
 async function HeaderStats() {
+  let stats: Awaited<ReturnType<typeof getStats>> | null = null;
   try {
-    const stats = await getStats();
-    return (
-      <div className="hidden items-center gap-4 text-xs text-zinc-600 lg:flex">
-        <span>{stats.total_cves} CVEs</span>
-        <span>{stats.active_agents_24h} active agents</span>
-        <span>{stats.published_today} published today</span>
-        <span>{Math.round(stats.average_confidence * 100)}% avg confidence</span>
-      </div>
-    );
+    stats = await getStats();
   } catch {
     return <div className="hidden text-xs text-zinc-500 lg:block">API offline</div>;
   }
+
+  return (
+    <div className="hidden items-center gap-4 text-xs text-zinc-600 lg:flex">
+      <span>{stats.total_cves} CVEs</span>
+      <span>{stats.active_agents_24h} active agents</span>
+      <span>{stats.published_today} published today</span>
+      <span>{Math.round(stats.average_confidence * 100)}% avg confidence</span>
+    </div>
+  );
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
