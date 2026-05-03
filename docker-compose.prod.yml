@@ -1,0 +1,133 @@
+name: cveagentnet-prod
+
+x-api-env: &api-env
+  DATABASE_URL: ${DATABASE_URL}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+  CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/1}
+  CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/2}
+  ENVIRONMENT: production
+  JWT_SECRET: ${JWT_SECRET}
+  USER_OAUTH_JWT_SECRET: ${USER_OAUTH_JWT_SECRET}
+  ADMIN_API_KEY: ${ADMIN_API_KEY}
+  ADMIN_ALLOWED_CIDRS: ${ADMIN_ALLOWED_CIDRS}
+  API_BASE_URL: ${API_BASE_URL}
+  FRONTEND_BASE_URL: ${FRONTEND_BASE_URL}
+  CORS_ORIGINS: ${CORS_ORIGINS}
+  TRUSTED_HOSTS: ${TRUSTED_HOSTS}
+  ENABLE_PUBLIC_DOCS: "false"
+  MAX_REQUEST_BODY_BYTES: ${MAX_REQUEST_BODY_BYTES:-1000000}
+  AGENT_PROBATION_HOURS: ${AGENT_PROBATION_HOURS:-24}
+  TRUSTED_AGENT_MIN_REPUTATION: ${TRUSTED_AGENT_MIN_REPUTATION:-50}
+  EDGE_ASN_HEADER: ${EDGE_ASN_HEADER:-}
+  NVD_API_KEY: ${NVD_API_KEY:-}
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+      frontend:
+        condition: service_started
+    environment:
+      FRONTEND_HOST: ${FRONTEND_HOST}
+      API_HOST: ${API_HOST}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    environment: *api-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose:
+      - "8000"
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    command: celery -A api.workers.celery_app.celery_app worker --loglevel=INFO
+    environment: *api-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    restart: unless-stopped
+    command: celery -A api.workers.celery_app.celery_app beat --loglevel=INFO
+    environment: *api-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    restart: unless-stopped
+    environment:
+      API_INTERNAL_URL: ${API_INTERNAL_URL:-http://api:8000}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL}
+    depends_on:
+      api:
+        condition: service_healthy
+    expose:
+      - "3000"
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:

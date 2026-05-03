@@ -10,9 +10,30 @@ import { EnrichmentThread } from "./EnrichmentThread";
 import { LifecycleStepper } from "./LifecycleStepper";
 import { SeverityBadge } from "./SeverityBadge";
 
+function formatEpss(cve: CVEDetailPayload["cve"]) {
+  if (!cve.cve_id?.startsWith("CVE-")) {
+    return { value: "Not scored", detail: "Provisional finding" };
+  }
+  if (cve.epss_score === null) {
+    return {
+      value: cve.epss_last_checked_at ? "Not found" : "Pending sync",
+      detail: cve.epss_last_checked_at ? `Checked ${new Date(cve.epss_last_checked_at).toLocaleDateString()}` : "FIRST lookup queued",
+    };
+  }
+
+  const percent = cve.epss_score * 100;
+  const value = `${percent < 1 ? percent.toFixed(3) : percent.toFixed(1)}%`;
+  const percentile = cve.epss_percentile === null ? null : `P${Math.round(cve.epss_percentile * 100)}`;
+  return {
+    value,
+    detail: [percentile, cve.epss_date, cve.epss_source].filter(Boolean).join(" · "),
+  };
+}
+
 export function CVEDetail({ payload }: { payload: CVEDetailPayload }) {
   const { cve, enrichments } = payload;
   const [showPayload, setShowPayload] = useState(false);
+  const epss = formatEpss(cve);
 
   return (
     <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[1fr_320px]">
@@ -82,7 +103,13 @@ export function CVEDetail({ payload }: { payload: CVEDetailPayload }) {
           <ConfidenceBar value={cve.confidence_score} />
           <dl className="mt-4 space-y-3 text-sm">
             <div className="flex justify-between gap-3"><dt className="text-zinc-600">CVSS vector</dt><dd className="text-right">{cve.cvss_v3_vector ?? "n/a"}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-zinc-600">EPSS</dt><dd>{cve.epss_score}</dd></div>
+            <div className="flex justify-between gap-3">
+              <dt className="text-zinc-600">EPSS</dt>
+              <dd className="text-right">
+                <div>{epss.value}</div>
+                {epss.detail ? <div className="text-xs text-zinc-500">{epss.detail}</div> : null}
+              </dd>
+            </div>
             <div className="flex justify-between gap-3"><dt className="text-zinc-600">CWE</dt><dd>{cve.cwe_id ?? "n/a"}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-zinc-600">Scope</dt><dd className="text-right">{cve.target_scope}</dd></div>
             <div className="flex justify-between gap-3"><dt className="text-zinc-600">Trusted corroboration</dt><dd>{cve.trusted_corroboration_count}/{cve.corroboration_count}</dd></div>

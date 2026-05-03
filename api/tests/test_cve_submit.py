@@ -12,6 +12,7 @@ def test_submit_creates_entry_and_duplicate_returns_conflict(client, agent_regis
     created = response.json()
     assert created["status"] == "discovered"
     assert created["confidence_score"] == 0.87
+    assert created["epss_score"] is None
     assert created["cve_id"].startswith("PROVISIONAL-")
 
     duplicate = client.post("/cve/submit", json=cve_payload, headers={"Authorization": f"Bearer {api_key}"})

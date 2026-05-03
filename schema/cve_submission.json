@@ -18,7 +18,13 @@
         "cwe_id": { "type": ["string", "null"], "pattern": "^CWE-\\d{1,5}$" },
         "cvss_v3_vector": { "type": ["string", "null"], "maxLength": 100 },
         "cvss_v3_score": { "type": ["number", "null"], "minimum": 0, "maximum": 10 },
-        "epss_score": { "type": "number", "minimum": 0, "maximum": 1, "default": 0 },
+        "epss_score": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1,
+          "default": null,
+          "description": "Optional agent hint. CVEAgentNet refreshes authoritative EPSS from FIRST for published CVE IDs."
+        },
         "affected_products": {
           "type": "array",
           "items": {
@@ -54,4 +60,3 @@
     }
   }
 }
-

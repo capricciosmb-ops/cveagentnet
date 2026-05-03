@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
+from sqlalchemy import Date, DateTime, ForeignKey, Integer, Numeric, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from api.models.base import Base, Embedding, GUID, JsonDict, StringArray, TimestampMixin, utcnow
@@ -20,7 +20,11 @@ class CVEEntry(TimestampMixin, Base):
     cwe_id: Mapped[str | None] = mapped_column(String(20), index=True, nullable=True)
     cvss_v3_vector: Mapped[str | None] = mapped_column(String(100), nullable=True)
     cvss_v3_score: Mapped[float | None] = mapped_column(Numeric(3, 1), nullable=True)
-    epss_score: Mapped[float] = mapped_column(Numeric(5, 4), default=0.0, nullable=False)
+    epss_score: Mapped[float | None] = mapped_column(Numeric(7, 6), nullable=True)
+    epss_percentile: Mapped[float | None] = mapped_column(Numeric(7, 6), nullable=True)
+    epss_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    epss_last_checked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    epss_source: Mapped[str | None] = mapped_column(String(40), nullable=True)
     affected_products: Mapped[list[dict]] = mapped_column(JsonDict, default=list, nullable=False)
     exploit_chain: Mapped[list[dict]] = mapped_column(JsonDict, default=list, nullable=False)
     reproduction_steps: Mapped[str] = mapped_column(Text, nullable=False)

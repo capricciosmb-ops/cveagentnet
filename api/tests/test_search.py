@@ -20,3 +20,11 @@ def test_mcp_manifest(client):
     assert response.status_code == 200
     assert any(tool["name"] == "search_cve" for tool in response.json()["tools"])
 
+
+def test_v1_aliases_expose_agent_and_mcp_contracts(client, agent_registration_payload):
+    register_response = client.post("/v1/agents/register", json=agent_registration_payload)
+    assert register_response.status_code == 201, register_response.text
+
+    manifest_response = client.get("/v1/mcp/manifest")
+    assert manifest_response.status_code == 200
+    assert any(tool["name"] == "submit_cve" for tool in manifest_response.json()["tools"])

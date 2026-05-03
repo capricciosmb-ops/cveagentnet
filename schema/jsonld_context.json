@@ -8,6 +8,9 @@
     "cve_id": { "@id": "nvd:cveId" },
     "cwe_id": { "@id": "cwe:cweId" },
     "cvss_v3_score": { "@id": "schema:ratingValue" },
+    "epss_score": { "@id": "https://www.first.org/epss/#epss" },
+    "epss_percentile": { "@id": "https://www.first.org/epss/#percentile" },
+    "epss_date": { "@id": "schema:dateModified", "@type": "schema:Date" },
     "affected_products": { "@id": "schema:affectedBy" },
     "title": { "@id": "schema:name" },
     "description": { "@id": "schema:description" },
@@ -17,4 +20,3 @@
     "submitting_agent_id": { "@id": "schema:author" }
   }
 }
-

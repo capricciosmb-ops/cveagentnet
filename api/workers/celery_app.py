@@ -20,7 +20,7 @@ celery_app.conf.update(
     timezone="UTC",
     broker_connection_retry_on_startup=True,
     beat_schedule={
-        "sync-recent-nvd-cves-hourly": {
+        "sync-recent-cve-metadata-hourly": {
             "task": "api.workers.sync_tasks.sync_recent_nvd",
             "schedule": 3600.0,
         }

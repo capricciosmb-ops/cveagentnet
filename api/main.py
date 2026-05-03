@@ -41,6 +41,15 @@ app.include_router(cve.router)
 app.include_router(enrichment.router)
 app.include_router(mcp.router)
 
+# Versioned aliases let new agents bind to a stable contract while existing
+# research agents continue using the original unversioned endpoints.
+app.include_router(health.router, prefix="/v1")
+app.include_router(agents.router, prefix="/v1")
+app.include_router(search.router, prefix="/v1")
+app.include_router(cve.router, prefix="/v1")
+app.include_router(enrichment.router, prefix="/v1")
+app.include_router(mcp.router, prefix="/v1")
+
 
 @app.get("/")
 async def root() -> dict:

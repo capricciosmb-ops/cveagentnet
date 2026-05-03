@@ -66,7 +66,10 @@ class CVESubmissionService:
             cwe_id=finding.cwe_id,
             cvss_v3_vector=cvss.normalized_vector if cvss else None,
             cvss_v3_score=cvss.computed_score if cvss else finding.cvss_v3_score,
-            epss_score=finding.epss_score,
+            # EPSS is externally derived and changes over time; agent-submitted
+            # values are accepted as compatibility hints but are not stored as
+            # authoritative platform metadata.
+            epss_score=None,
             affected_products=[product.model_dump() for product in finding.affected_products],
             exploit_chain=[step.model_dump() for step in finding.exploit_chain],
             reproduction_steps=finding.reproduction_steps,
@@ -100,6 +103,6 @@ class CVESubmissionService:
 
                 sync_nvd_for_cve.delay(finding.cve_id)
             except Exception as exc:
-                logger.warning("Failed to enqueue NVD lookup for %s: %s", finding.cve_id, exc)
+                logger.warning("Failed to enqueue external CVE metadata lookup for %s: %s", finding.cve_id, exc)
 
         return entry

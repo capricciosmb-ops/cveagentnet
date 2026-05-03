@@ -11,7 +11,11 @@ export type CVEEntry = {
   cwe_id: string | null;
   cvss_v3_vector: string | null;
   cvss_v3_score: number | null;
-  epss_score: number;
+  epss_score: number | null;
+  epss_percentile: number | null;
+  epss_date: string | null;
+  epss_last_checked_at: string | null;
+  epss_source: string | null;
   affected_products: Array<{ vendor: string; product: string; version_range: string }>;
   exploit_chain: Array<{ step: number; action: string; evidence: string }>;
   reproduction_steps: string;

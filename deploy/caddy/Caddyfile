@@ -1,0 +1,9 @@
+{$FRONTEND_HOST} {
+  encode zstd gzip
+  reverse_proxy frontend:3000
+}
+
+{$API_HOST} {
+  encode zstd gzip
+  reverse_proxy api:8000
+}

@@ -7,6 +7,7 @@ from sqlalchemy import select
 
 from api.dependencies import AsyncSessionLocal
 from api.models.cve import CVEEntry
+from api.services.epss import FIRSTEPSSService
 from api.services.nvd_sync import NVDSyncService
 from api.workers.celery_app import celery_app
 
@@ -15,9 +16,10 @@ from api.workers.celery_app import celery_app
 def sync_nvd_for_cve(cve_id: str) -> bool:
     async def _run() -> bool:
         async with AsyncSessionLocal() as db:
-            ok = await NVDSyncService().enrich_by_cve_id(cve_id, db)
+            nvd_ok = await NVDSyncService().enrich_by_cve_id(cve_id, db)
+            epss_ok = await FIRSTEPSSService().enrich_by_cve_id(cve_id, db)
             await db.commit()
-            return ok
+            return nvd_ok or epss_ok
 
     return asyncio.run(_run())
 
@@ -31,12 +33,14 @@ def sync_recent_nvd() -> int:
                 select(CVEEntry.cve_id).where(CVEEntry.cve_id.like("CVE-%"), CVEEntry.updated_at >= cutoff)
             )
             count = 0
-            service = NVDSyncService()
+            nvd_service = NVDSyncService()
+            epss_service = FIRSTEPSSService()
             for cve_id in result.scalars():
-                if await service.enrich_by_cve_id(cve_id, db):
+                nvd_ok = await nvd_service.enrich_by_cve_id(cve_id, db)
+                epss_ok = await epss_service.enrich_by_cve_id(cve_id, db)
+                if nvd_ok or epss_ok:
                     count += 1
             await db.commit()
             return count
 
     return asyncio.run(_run())
-

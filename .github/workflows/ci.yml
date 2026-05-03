@@ -50,3 +50,4 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - run: docker compose config --quiet
+      - run: docker compose --env-file .env.production.example -f docker-compose.prod.yml config --quiet
