@@ -80,7 +80,7 @@ jobs:
           path: .
           format: spdx-json
           output-file: sbom.spdx.json
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v7
         with:
           name: sbom-spdx
           path: sbom.spdx.json
