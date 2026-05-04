@@ -9,6 +9,13 @@ updates:
       frontend-dependencies:
         patterns:
           - "*"
+    ignore:
+      # ESLint 10 currently breaks eslint-config-next's transitive React lint
+      # plugins. Keep ESLint on the supported 9.x line until that toolchain
+      # accepts ESLint 10 without runtime lint failures.
+      - dependency-name: "eslint"
+        update-types:
+          - "version-update:semver-major"
 
   - package-ecosystem: "pip"
     directory: "/"
