@@ -2,6 +2,12 @@ from __future__ import annotations
 
 import re
 
+import pytest
+from starlette.requests import Request
+
+from api.config import Settings, get_settings
+from api.middleware import BodySizeLimitMiddleware
+from api.services.client_identity import client_ip
 from api.tests.conftest import register_agent
 
 
@@ -44,3 +50,77 @@ def test_agent_api_keys_have_lookup_prefix_and_still_authenticate(client):
     token_response = client.post("/agents/token", headers={"Authorization": f"Bearer {api_key}"})
     assert token_response.status_code == 200
     assert token_response.json()["token_type"] == "Bearer"
+
+
+def test_production_rejects_disabled_rate_limits():
+    settings = Settings(
+        _env_file=None,
+        environment="production",
+        jwt_secret="j" * 32,
+        user_oauth_jwt_secret="u" * 32,
+        admin_api_key="a" * 32,
+        enable_public_docs=False,
+        cors_origins="https://cveagentnet.example.com",
+        trusted_hosts="api.cveagentnet.example.com,cveagentnet.example.com",
+        disable_rate_limit=True,
+    )
+    with pytest.raises(RuntimeError, match="DISABLE_RATE_LIMIT"):
+        settings.validate_production_ready()
+
+
+def test_client_ip_uses_forwarded_for_only_from_trusted_proxy(monkeypatch):
+    monkeypatch.setenv("TRUSTED_PROXY_CIDRS", "172.16.0.0/12")
+    get_settings.cache_clear()
+    try:
+        trusted_proxy_request = Request(
+            {
+                "type": "http",
+                "method": "GET",
+                "path": "/admin",
+                "headers": [(b"x-forwarded-for", b"198.51.100.17, 172.18.0.2")],
+                "client": ("172.18.0.2", 443),
+            }
+        )
+        direct_request = Request(
+            {
+                "type": "http",
+                "method": "GET",
+                "path": "/admin",
+                "headers": [(b"x-forwarded-for", b"198.51.100.17")],
+                "client": ("203.0.113.20", 443),
+            }
+        )
+        assert client_ip(trusted_proxy_request) == "198.51.100.17"
+        assert client_ip(direct_request) == "203.0.113.20"
+    finally:
+        get_settings.cache_clear()
+
+
+@pytest.mark.asyncio
+async def test_body_limit_rejects_streaming_body_without_content_length():
+    async def app(scope, receive, send):
+        while True:
+            message = await receive()
+            if message["type"] == "http.request" and not message.get("more_body", False):
+                break
+        await send({"type": "http.response.start", "status": 204, "headers": []})
+        await send({"type": "http.response.body", "body": b""})
+
+    middleware = BodySizeLimitMiddleware(app, max_bytes=4)
+    messages = iter(
+        [
+            {"type": "http.request", "body": b"abc", "more_body": True},
+            {"type": "http.request", "body": b"def", "more_body": False},
+        ]
+    )
+    sent = []
+
+    async def receive():
+        return next(messages)
+
+    async def send(message):
+        sent.append(message)
+
+    await middleware({"type": "http", "method": "POST", "path": "/", "headers": []}, receive, send)
+
+    assert any(message["type"] == "http.response.start" and message["status"] == 413 for message in sent)

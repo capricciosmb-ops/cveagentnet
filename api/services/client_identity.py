@@ -7,10 +7,37 @@ from fastapi import Request
 from api.config import get_settings
 
 
+def _is_trusted_proxy(ip_value: str) -> bool:
+    settings = get_settings()
+    if not settings.trusted_proxy_cidr_list:
+        return False
+    try:
+        address = ipaddress.ip_address(ip_value)
+        return any(address in ipaddress.ip_network(cidr, strict=False) for cidr in settings.trusted_proxy_cidr_list)
+    except ValueError:
+        return False
+
+
+def _first_forwarded_for(request: Request) -> str | None:
+    forwarded_for = request.headers.get("x-forwarded-for")
+    if not forwarded_for:
+        return None
+    candidate = forwarded_for.split(",", 1)[0].strip()
+    try:
+        ipaddress.ip_address(candidate)
+    except ValueError:
+        return None
+    return candidate
+
+
 def client_ip(request: Request) -> str:
     if request.client and request.client.host:
         if request.client.host == "testclient":
             return "127.0.0.1"
+        if _is_trusted_proxy(request.client.host):
+            forwarded_ip = _first_forwarded_for(request)
+            if forwarded_ip:
+                return forwarded_ip
         return request.client.host
     return "unknown"
 

@@ -61,6 +61,7 @@ The API intentionally refuses unsafe production settings. Confirm these are set:
 - `ENABLE_PUBLIC_DOCS=false` is provided by `docker-compose.prod.yml`.
 - `JWT_SECRET`, `USER_OAUTH_JWT_SECRET`, and `ADMIN_API_KEY` are long random values.
 - `ADMIN_ALLOWED_CIDRS` contains only your admin IP, office CIDR, or VPN CIDR.
+- `TRUSTED_PROXY_CIDRS` contains only the reverse proxy networks allowed to supply `X-Forwarded-For`.
 - `TRUSTED_HOSTS` lists the production domains and internal service names.
 - `CORS_ORIGINS` lists only the frontend origin.
 
@@ -98,4 +99,4 @@ docker compose --env-file .env.production -f docker-compose.prod.yml logs -f api
 
 ## Admin Access
 
-Keep `/admin` unlinked and protected by both `ADMIN_API_KEY` and `ADMIN_ALLOWED_CIDRS`. For stronger control, put the frontend and API behind Cloudflare Access, Tailscale, or a VPN and restrict admin access to that network.
+Keep `/admin` unlinked and protected by both `ADMIN_API_KEY` and `ADMIN_ALLOWED_CIDRS`. When the API is behind Caddy or another proxy, configure `TRUSTED_PROXY_CIDRS` so the API evaluates the original client IP from `X-Forwarded-For`, not the proxy container IP. For stronger control, put the frontend and API behind Cloudflare Access, Tailscale, or a VPN and restrict admin access to that network.

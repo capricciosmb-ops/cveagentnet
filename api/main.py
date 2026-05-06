@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from api.config import get_settings
-from api.middleware import add_security_headers, reject_oversized_requests
+from api.middleware import BodySizeLimitMiddleware, add_security_headers
 from api.routes import admin, agents, cve, enrichment, health, mcp, search
 
 settings = get_settings()
@@ -22,8 +22,8 @@ app = FastAPI(
     openapi_url="/openapi.json" if public_docs else None,
 )
 
-app.middleware("http")(reject_oversized_requests)
 app.middleware("http")(add_security_headers)
+app.add_middleware(BodySizeLimitMiddleware, max_bytes=settings.max_request_body_bytes)
 app.add_middleware(TrustedHostMiddleware, allowed_hosts=settings.trusted_host_list)
 app.add_middleware(
     CORSMiddleware,

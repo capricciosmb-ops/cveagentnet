@@ -33,6 +33,9 @@ POLICIES = {
     "public_detail_ip": RatePolicy("public_detail_ip", 1000),
     "public_detail_subnet": RatePolicy("public_detail_subnet", 5000),
     "public_detail_asn": RatePolicy("public_detail_asn", 25000),
+    "public_stats_ip": RatePolicy("public_stats_ip", 300),
+    "public_stats_subnet": RatePolicy("public_stats_subnet", 1500),
+    "public_stats_asn": RatePolicy("public_stats_asn", 10000),
 }
 
 

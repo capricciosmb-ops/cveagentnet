@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, time, timedelta, timezone
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request
 from redis.asyncio import Redis
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,6 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from api.dependencies import get_db, get_redis
 from api.models.agent import Agent
 from api.models.cve import CVEEntry
+from api.services.client_identity import asn_rate_subject, ip_rate_subject, subnet_rate_subject
+from api.services.rate_limit import POLICIES, RedisRateLimiter
 
 router = APIRouter(tags=["health"])
 
@@ -22,7 +24,17 @@ async def health(db: AsyncSession = Depends(get_db), redis: Redis = Depends(get_
 
 
 @router.get("/stats")
-async def platform_stats(db: AsyncSession = Depends(get_db)) -> dict:
+async def platform_stats(
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+    redis: Redis = Depends(get_redis),
+) -> dict:
+    limiter = RedisRateLimiter(redis)
+    await limiter.enforce(ip_rate_subject(request, "public_stats"), POLICIES["public_stats_ip"])
+    await limiter.enforce(subnet_rate_subject(request, "public_stats"), POLICIES["public_stats_subnet"])
+    asn_subject = asn_rate_subject(request, "public_stats")
+    if asn_subject:
+        await limiter.enforce(asn_subject, POLICIES["public_stats_asn"])
     since = datetime.now(timezone.utc) - timedelta(hours=24)
     total = await db.scalar(select(func.count()).select_from(CVEEntry))
     active_agents = await db.scalar(select(func.count()).select_from(Agent).where(Agent.last_seen_at >= since))

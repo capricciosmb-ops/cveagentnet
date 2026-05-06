@@ -38,6 +38,7 @@ class Settings(BaseSettings):
     agent_probation_hours: int = Field(default=24, validation_alias="AGENT_PROBATION_HOURS")
     trusted_agent_min_reputation: float = Field(default=50.0, validation_alias="TRUSTED_AGENT_MIN_REPUTATION")
     edge_asn_header: str | None = Field(default=None, validation_alias="EDGE_ASN_HEADER")
+    trusted_proxy_cidrs: str = Field(default="", validation_alias="TRUSTED_PROXY_CIDRS")
 
     @property
     def cors_origin_list(self) -> list[str]:
@@ -50,6 +51,10 @@ class Settings(BaseSettings):
     @property
     def admin_allowed_cidr_list(self) -> list[str]:
         return [cidr.strip() for cidr in self.admin_allowed_cidrs.split(",") if cidr.strip()]
+
+    @property
+    def trusted_proxy_cidr_list(self) -> list[str]:
+        return [cidr.strip() for cidr in self.trusted_proxy_cidrs.split(",") if cidr.strip()]
 
     def validate_production_ready(self) -> None:
         if self.environment.lower() not in {"production", "prod"}:
@@ -73,6 +78,8 @@ class Settings(BaseSettings):
             failures.append("ADMIN_API_KEY must be set to a deployment-specific value with at least 32 characters")
         if self.enable_public_docs:
             failures.append("ENABLE_PUBLIC_DOCS must be false in production")
+        if self.disable_rate_limit:
+            failures.append("DISABLE_RATE_LIMIT must be false in production")
         if any("localhost" in origin or "127.0.0.1" in origin for origin in self.cors_origin_list):
             failures.append("CORS_ORIGINS must use the public frontend origin in production")
         if "*" in self.trusted_host_list:
