@@ -35,6 +35,21 @@ def test_security_headers_are_set_on_public_api(client):
     assert "frame-ancestors" in response.headers["content-security-policy"]
 
 
+def test_public_get_is_cacheable_but_writes_and_admin_are_not(client):
+    # Public GET must not be forced no-store so a CDN can cache it.
+    public_get = client.get("/health")
+    assert public_get.headers.get("cache-control") != "no-store"
+
+    # Writes must remain no-store. A failed write still goes through the
+    # security-headers middleware before the body returns.
+    write = client.post("/agents/register", json={})
+    assert write.headers.get("cache-control") == "no-store"
+
+    # Admin GET (unauthenticated) still must not be cached.
+    admin_get = client.get("/admin/agents")
+    assert admin_get.headers.get("cache-control") == "no-store"
+
+
 def test_admin_abuse_signal_endpoint_requires_admin_key(client):
     response = client.get("/admin/abuse-signals")
     assert response.status_code == 401

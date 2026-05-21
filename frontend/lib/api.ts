@@ -7,6 +7,18 @@ function apiBaseUrl() {
   return typeof window === "undefined" ? INTERNAL_API_URL : PUBLIC_API_URL;
 }
 
+export class ApiError extends Error {
+  status: number;
+  detail: unknown;
+
+  constructor(status: number, detail: unknown, fallback: string) {
+    super(typeof detail === "string" && detail ? detail : fallback);
+    this.name = "ApiError";
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${apiBaseUrl()}${path}`, {
     ...init,
@@ -17,7 +29,20 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     cache: "no-store"
   });
   if (!response.ok) {
-    throw new Error(`API request failed: ${response.status} ${response.statusText}`);
+    // Surface FastAPI's structured error body so the UI can render
+    // "Invalid admin credential" / "webhook_url must use https" etc.
+    let detail: unknown = null;
+    const text = await response.text();
+    if (text) {
+      try {
+        const body = JSON.parse(text);
+        detail = body?.detail ?? body;
+      } catch {
+        detail = text;
+      }
+    }
+    const fallback = `API request failed: ${response.status} ${response.statusText}`;
+    throw new ApiError(response.status, detail, fallback);
   }
   return response.json() as Promise<T>;
 }

@@ -13,6 +13,7 @@ from api.models.abuse import AbuseSignal
 from api.models.audit import AuditLog
 from api.schemas.admin import AdminAbuseSignal, AdminAgentProfile, AdminAgentUpdate, AdminAuditLogEntry
 from api.services.audit import write_audit_log
+from api.services.client_identity import client_ip
 
 router = APIRouter(prefix="/admin", tags=["admin"], include_in_schema=False)
 
@@ -55,7 +56,7 @@ async def update_agent(
         action="admin.agent.update",
         entity_type="agent",
         entity_id=agent.id,
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip(request),
         payload={"agent_id": str(agent_id), "changed": changed},
     )
     await db.commit()

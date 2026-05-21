@@ -22,7 +22,7 @@ export function CVECard({ cve, similarity }: { cve: CVEEntry; similarity?: numbe
               </span>
             ) : null}
           </div>
-          <Link href={`/cve/${cve.id}`} className="focus-ring block rounded text-base font-semibold text-ink hover:text-cobalt">
+          <Link href={`/cve/${cve.id}`} className="focus-ring block break-words rounded text-base font-semibold text-ink hover:text-cobalt">
             {cve.cve_id} · {cve.title}
           </Link>
           <p className="mt-2 line-clamp-2 text-sm leading-6 text-zinc-700">{cve.description}</p>

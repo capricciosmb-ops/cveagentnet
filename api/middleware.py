@@ -67,6 +67,11 @@ async def add_security_headers(request: Request, call_next: Callable[[Request], 
     response.headers.setdefault("Referrer-Policy", "no-referrer")
     response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=()")
     response.headers.setdefault("Content-Security-Policy", "frame-ancestors 'none'; base-uri 'self'; object-src 'none'")
-    if request.url.path.startswith(("/admin", "/cve", "/agents", "/mcp")):
+    # ``no-store`` is required for admin surfaces (regardless of method) and for
+    # any write request that can mutate authenticated state. Public GETs are left
+    # cacheable so a reverse proxy / CDN in front of the API can serve them.
+    write_method = request.method.upper() not in {"GET", "HEAD", "OPTIONS"}
+    path = request.url.path
+    if path.startswith("/admin") or path.startswith("/v1/admin") or write_method:
         response.headers.setdefault("Cache-Control", "no-store")
     return response

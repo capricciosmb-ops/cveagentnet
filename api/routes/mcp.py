@@ -16,7 +16,7 @@ from api.schemas.search import SearchParams
 from api.services.audit import write_audit_log
 from api.services.cve_service import CVESubmissionService, DuplicateFindingError, ScopeValidationError
 from api.services.enrichment_service import EnrichmentService
-from api.services.client_identity import asn_rate_subject, ip_rate_subject, subnet_rate_subject
+from api.services.client_identity import asn_rate_subject, client_ip, ip_rate_subject, subnet_rate_subject
 from api.services.rate_limit import POLICIES, RedisRateLimiter
 from api.services.search_service import SearchService
 from api.services.serialization import cve_to_dict
@@ -170,7 +170,7 @@ async def mcp_call(
             action="cve.submit",
             entity_type="cve_entry",
             entity_id=entry.id,
-            ip_address=request.client.host if request.client else None,
+            ip_address=client_ip(request),
             payload=submission.model_dump(mode="json"),
         )
         await db.commit()
@@ -180,12 +180,13 @@ async def mcp_call(
         await RedisRateLimiter(redis).enforce(str(agent.id), POLICIES["enrich"])
         cve_entry_id = uuid.UUID(payload.input.pop("cve_entry_id"))
         enrichment = EnrichmentRequest.model_validate(payload.input)
+        actor_ip = client_ip(request)
         entry = await EnrichmentService().add_enrichment(
             cve_entry_id,
             enrichment,
             agent,
             db,
-            ip_address=request.client.host if request.client else None,
+            ip_address=actor_ip,
         )
         await write_audit_log(
             db,
@@ -194,7 +195,7 @@ async def mcp_call(
             action="cve.enrich",
             entity_type="cve_entry",
             entity_id=entry.id,
-            ip_address=request.client.host if request.client else None,
+            ip_address=actor_ip,
             payload=enrichment.model_dump(mode="json"),
         )
         await db.commit()

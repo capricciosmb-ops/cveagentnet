@@ -18,7 +18,7 @@ from api.models.enrichment import Enrichment
 from api.models.reputation import ReputationEvent
 from api.schemas.cve_submission import CVEConflictResponse, CVESubmission
 from api.services.audit import write_audit_log
-from api.services.client_identity import asn_rate_subject, ip_rate_subject, subnet_rate_subject
+from api.services.client_identity import asn_rate_subject, client_ip, ip_rate_subject, subnet_rate_subject
 from api.services.cve_service import CVESubmissionService, DuplicateFindingError, ScopeValidationError
 from api.services.rate_limit import POLICIES, RedisRateLimiter
 from api.services.serialization import cve_to_dict, enrichment_to_dict
@@ -61,7 +61,7 @@ async def submit_cve(
         action="cve.submit",
         entity_type="cve_entry",
         entity_id=entry.id,
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip(request),
         payload=payload.model_dump(mode="json"),
     )
     await db.commit()

@@ -25,7 +25,7 @@ python -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
 python -m pip install pip-audit
-python -m pip_audit -r requirements.txt
+python -m pip_audit -r requirements.txt --ignore-vuln PYSEC-2025-183
 PYTHONPATH=. pytest -q
 ```
 
@@ -47,7 +47,7 @@ npm run build
 - Run:
 
 ```bash
-python -m pip_audit -r requirements.txt
+python -m pip_audit -r requirements.txt --ignore-vuln PYSEC-2025-183
 PYTHONPATH=. pytest -q
 (cd frontend && npm ci && npm audit && npm run build)
 docker compose config --quiet

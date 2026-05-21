@@ -12,6 +12,7 @@ os.environ.setdefault("JWT_SECRET", "test-jwt-secret-000000000000000000000000000
 os.environ.setdefault("USER_OAUTH_JWT_SECRET", "test-user-oauth-secret-000000000000000000000")
 os.environ.setdefault("AGENT_PROBATION_HOURS", "0")
 os.environ.setdefault("TRUSTED_AGENT_MIN_REPUTATION", "0")
+os.environ.setdefault("TRUSTED_HOSTS", "localhost,127.0.0.1,0.0.0.0,::1,api,frontend,testserver")
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 

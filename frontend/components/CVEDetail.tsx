@@ -36,8 +36,8 @@ export function CVEDetail({ payload }: { payload: CVEDetailPayload }) {
   const epss = formatEpss(cve);
 
   return (
-    <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[1fr_320px]">
-      <section className="space-y-6">
+    <main className="mx-auto grid max-w-7xl gap-6 px-4 py-6 lg:grid-cols-[minmax(0,1fr)_320px]">
+      <section className="min-w-0 space-y-6">
         <div className="space-y-4 border-b border-line pb-5">
           <div className="flex flex-wrap items-center gap-2">
             <SeverityBadge score={cve.cvss_v3_score} />
@@ -98,21 +98,33 @@ export function CVEDetail({ payload }: { payload: CVEDetailPayload }) {
         ) : null}
         <EnrichmentThread cveId={cve.id} enrichments={enrichments} />
       </section>
-      <aside className="space-y-4">
+      <aside className="min-w-0 space-y-4">
         <div className="rounded-lg border border-line bg-white p-4">
           <ConfidenceBar value={cve.confidence_score} />
           <dl className="mt-4 space-y-3 text-sm">
-            <div className="flex justify-between gap-3"><dt className="text-zinc-600">CVSS vector</dt><dd className="text-right">{cve.cvss_v3_vector ?? "n/a"}</dd></div>
             <div className="flex justify-between gap-3">
-              <dt className="text-zinc-600">EPSS</dt>
-              <dd className="text-right">
-                <div>{epss.value}</div>
-                {epss.detail ? <div className="text-xs text-zinc-500">{epss.detail}</div> : null}
+              <dt className="shrink-0 text-zinc-600">CVSS vector</dt>
+              <dd className="min-w-0 break-all text-right">{cve.cvss_v3_vector ?? "n/a"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="shrink-0 text-zinc-600">EPSS</dt>
+              <dd className="min-w-0 text-right">
+                <div className="break-all">{epss.value}</div>
+                {epss.detail ? <div className="break-all text-xs text-zinc-500">{epss.detail}</div> : null}
               </dd>
             </div>
-            <div className="flex justify-between gap-3"><dt className="text-zinc-600">CWE</dt><dd>{cve.cwe_id ?? "n/a"}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-zinc-600">Scope</dt><dd className="text-right">{cve.target_scope}</dd></div>
-            <div className="flex justify-between gap-3"><dt className="text-zinc-600">Trusted corroboration</dt><dd>{cve.trusted_corroboration_count}/{cve.corroboration_count}</dd></div>
+            <div className="flex justify-between gap-3">
+              <dt className="shrink-0 text-zinc-600">CWE</dt>
+              <dd className="min-w-0 break-all text-right">{cve.cwe_id ?? "n/a"}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="shrink-0 text-zinc-600">Scope</dt>
+              <dd className="min-w-0 break-all text-right">{cve.target_scope}</dd>
+            </div>
+            <div className="flex justify-between gap-3">
+              <dt className="shrink-0 text-zinc-600">Trusted corroboration</dt>
+              <dd className="min-w-0 text-right">{cve.trusted_corroboration_count}/{cve.corroboration_count}</dd>
+            </div>
           </dl>
         </div>
         <div className="rounded-lg border border-line bg-white p-4">
@@ -132,9 +144,13 @@ export function CVEDetail({ payload }: { payload: CVEDetailPayload }) {
           <h2 className="mb-3 text-sm font-semibold uppercase text-zinc-600">References</h2>
           <div className="space-y-2">
             {cve.references.map((reference) => (
-              <a key={reference} href={reference} className="focus-ring flex items-center gap-2 rounded text-sm text-cobalt hover:underline">
-                <LinkIcon className="h-4 w-4" />
-                <span className="truncate">{reference}</span>
+              <a
+                key={reference}
+                href={reference}
+                className="focus-ring flex min-w-0 items-center gap-2 rounded text-sm text-cobalt hover:underline"
+              >
+                <LinkIcon className="h-4 w-4 shrink-0" />
+                <span className="min-w-0 flex-1 truncate">{reference}</span>
               </a>
             ))}
           </div>

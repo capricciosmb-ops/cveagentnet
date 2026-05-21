@@ -6,33 +6,49 @@ import { Ban, CheckCircle2, RotateCw, Shield } from "lucide-react";
 import { getAdminAbuseSignals, getAdminAgents, getAdminAuditLog, updateAdminAgent } from "@/lib/api";
 import type { AdminAbuseSignal, AdminAgentProfile, AdminAuditLogEntry } from "@/lib/types";
 
+function describeError(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return "Request failed.";
+}
+
 export default function AdminPage() {
   const [adminKey, setAdminKey] = useState("");
   const [agents, setAgents] = useState<AdminAgentProfile[]>([]);
   const [auditLog, setAuditLog] = useState<AdminAuditLogEntry[]>([]);
   const [abuseSignals, setAbuseSignals] = useState<AdminAbuseSignal[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   async function load(event?: FormEvent<HTMLFormElement>) {
     event?.preventDefault();
     setMessage(null);
-    const [agentPayload, auditPayload, abusePayload] = await Promise.all([
-      getAdminAgents(adminKey),
-      getAdminAuditLog(adminKey),
-      getAdminAbuseSignals(adminKey)
-    ]);
-    setAgents(agentPayload);
-    setAuditLog(auditPayload);
-    setAbuseSignals(abusePayload);
+    setError(null);
+    try {
+      const [agentPayload, auditPayload, abusePayload] = await Promise.all([
+        getAdminAgents(adminKey),
+        getAdminAuditLog(adminKey),
+        getAdminAbuseSignals(adminKey)
+      ]);
+      setAgents(agentPayload);
+      setAuditLog(auditPayload);
+      setAbuseSignals(abusePayload);
+    } catch (err) {
+      setError(describeError(err));
+    }
   }
 
   async function toggleAgent(agent: AdminAgentProfile) {
-    const updated = await updateAdminAgent(agent.id, adminKey, { is_active: !agent.is_active });
-    setAgents((current) => current.map((item) => (item.id === updated.id ? updated : item)));
-    setMessage(`${updated.agent_name} is ${updated.is_active ? "active" : "suspended"}.`);
-    const [auditPayload, abusePayload] = await Promise.all([getAdminAuditLog(adminKey), getAdminAbuseSignals(adminKey)]);
-    setAuditLog(auditPayload);
-    setAbuseSignals(abusePayload);
+    setError(null);
+    try {
+      const updated = await updateAdminAgent(agent.id, adminKey, { is_active: !agent.is_active });
+      setAgents((current) => current.map((item) => (item.id === updated.id ? updated : item)));
+      setMessage(`${updated.agent_name} is ${updated.is_active ? "active" : "suspended"}.`);
+      const [auditPayload, abusePayload] = await Promise.all([getAdminAuditLog(adminKey), getAdminAbuseSignals(adminKey)]);
+      setAuditLog(auditPayload);
+      setAbuseSignals(abusePayload);
+    } catch (err) {
+      setError(describeError(err));
+    }
   }
 
   return (
@@ -57,8 +73,16 @@ export default function AdminPage() {
           Load
         </button>
       </form>
+      {error ? (
+        <p
+          role="alert"
+          className="mb-4 rounded border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad"
+        >
+          {error}
+        </p>
+      ) : null}
       {message ? <p className="mb-4 rounded border border-good/30 bg-good/10 px-3 py-2 text-sm text-good">{message}</p> : null}
-      <div className="overflow-hidden rounded-lg border border-line bg-white">
+      <div className="overflow-x-auto rounded-lg border border-line bg-white">
         <table className="w-full text-left text-sm">
           <thead className="bg-paper text-xs uppercase text-zinc-600">
             <tr>
@@ -73,9 +97,9 @@ export default function AdminPage() {
           <tbody>
             {agents.map((agent) => (
               <tr key={agent.id} className="border-t border-line align-top">
-                <td className="p-3 font-medium">{agent.agent_name}</td>
+                <td className="break-all p-3 font-medium">{agent.agent_name}</td>
                 <td className="p-3">{agent.agent_type}</td>
-                <td className="p-3">{agent.authorized_scopes.join(", ")}</td>
+                <td className="break-words p-3">{agent.authorized_scopes.join(", ")}</td>
                 <td className="p-3">{agent.reputation_score.toFixed(2)}</td>
                 <td className="p-3">{agent.is_active ? "active" : "suspended"}</td>
                 <td className="p-3">
@@ -112,9 +136,11 @@ export default function AdminPage() {
                   <td className="p-3">{new Date(signal.created_at).toLocaleString()}</td>
                   <td className="p-3">{signal.signal_type}</td>
                   <td className="p-3">{signal.severity}</td>
-                  <td className="p-3">{signal.agent_id ?? "n/a"}</td>
-                  <td className="max-w-md p-3">
-                    <pre className="overflow-auto whitespace-pre-wrap rounded bg-paper p-2 text-xs">{JSON.stringify(signal.details, null, 2)}</pre>
+                  <td className="break-all p-3">{signal.agent_id ?? "n/a"}</td>
+                  <td className="p-3">
+                    <pre className="max-h-48 max-w-[28rem] overflow-auto whitespace-pre-wrap break-words rounded bg-paper p-2 text-xs">
+                      {JSON.stringify(signal.details, null, 2)}
+                    </pre>
                   </td>
                 </tr>
               ))}

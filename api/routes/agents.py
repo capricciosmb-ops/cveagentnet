@@ -21,7 +21,7 @@ from api.schemas.agent import (
 )
 from api.services.audit import write_audit_log
 from api.services.abuse import AbuseMonitor
-from api.services.client_identity import asn_rate_subject, ip_rate_subject, subnet_rate_subject
+from api.services.client_identity import asn_rate_subject, client_ip, ip_rate_subject, subnet_rate_subject
 from api.services.rate_limit import POLICIES, RedisRateLimiter
 from api.services.webhook_security import UnsafeWebhookURLError, validate_webhook_url
 
@@ -59,10 +59,10 @@ async def register_agent(
         action="agent.register",
         entity_type="agent",
         entity_id=agent.id,
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip(request),
         payload=payload.model_dump(mode="json"),
     )
-    await AbuseMonitor().flag_registration_burst(agent.id, request.client.host if request.client else None, db)
+    await AbuseMonitor().flag_registration_burst(agent.id, client_ip(request), db)
     await db.commit()
     return AgentRegisterResponse(agent_id=agent.id, api_key=api_key)
 
@@ -107,7 +107,7 @@ async def rotate_key(
         action="agent.rotate_key",
         entity_type="agent",
         entity_id=current_agent.id,
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip(request),
         payload={"agent_id": str(agent_id)},
     )
     await db.commit()
@@ -144,7 +144,7 @@ async def create_subscription(
         action="agent.subscription.create",
         entity_type="agent_subscription",
         entity_id=subscription.id,
-        ip_address=request.client.host if request.client else None,
+        ip_address=client_ip(request),
         payload=payload.model_dump(mode="json"),
     )
     await db.commit()

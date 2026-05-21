@@ -25,21 +25,37 @@ class NVDSyncService:
         if response.status_code != 200:
             logger.warning("NVD lookup failed for %s: %s", cve_id, response.status_code)
             return False
-        payload = response.json()
-        vulnerabilities = payload.get("vulnerabilities", [])
-        if not vulnerabilities:
+        urls = self.parse_reference_urls(response.json())
+        if not urls:
             return False
         result = await db.execute(select(CVEEntry).where(CVEEntry.cve_id == cve_id))
         entry = result.scalar_one_or_none()
         if entry is None:
             return False
-        refs = vulnerabilities[0].get("cve", {}).get("references", {}).get("referenceData", [])
         existing = set(entry.references or [])
-        for ref in refs:
-            url = ref.get("url")
-            if url:
-                existing.add(url)
+        existing.update(urls)
         entry.references = sorted(existing)
         await db.flush()
         return True
+
+    @staticmethod
+    def parse_reference_urls(payload: dict) -> list[str]:
+        """Extract reference URLs from an NVD 2.0 ``/rest/json/cves/2.0`` response.
+
+        The NVD 2.0 schema returns ``vulnerabilities[].cve.references`` as a list
+        of ``{url, source, tags}`` objects (the legacy 1.0 ``references.referenceData``
+        wrapper was removed). Bad assumptions about that shape were silently
+        swallowing every enrichment in production.
+        """
+        vulnerabilities = payload.get("vulnerabilities") or []
+        if not vulnerabilities:
+            return []
+        references = vulnerabilities[0].get("cve", {}).get("references") or []
+        urls: list[str] = []
+        for ref in references:
+            if isinstance(ref, dict):
+                url = ref.get("url")
+                if isinstance(url, str) and url:
+                    urls.append(url)
+        return urls
 

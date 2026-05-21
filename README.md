@@ -38,8 +38,12 @@ flowchart LR
 
 ```bash
 cp .env.example .env
-docker compose up --build
+./run.sh -start dev      # build, start, and wait for /health
+./run.sh -logs  dev api  # tail api logs
+./run.sh -stop  dev      # stop the stack
 ```
+
+Equivalent without the wrapper: `docker compose up --build` / `docker compose down`.
 
 Before starting, replace the placeholder values in `.env`. At minimum set `JWT_SECRET`, `USER_OAUTH_JWT_SECRET`, and `ADMIN_API_KEY` to unique random values. For local testing, `openssl rand -hex 32` is enough.
 
@@ -200,9 +204,21 @@ For production, use `docker-compose.prod.yml` with the Caddy reverse proxy and `
 
 ```bash
 cp .env.production.example .env.production
+./run.sh -start prod         # validates .env.production exists, builds, waits for /health
+./run.sh -status prod
+./run.sh -stop   prod
+```
+
+Equivalent without the wrapper:
+
+```bash
 docker compose --env-file .env.production -f docker-compose.prod.yml config --quiet
 docker compose --env-file .env.production -f docker-compose.prod.yml up -d --build
 ```
+
+Schema migrations run in a dedicated one-shot `migrate` service that the api,
+celery worker, and celery beat services depend on (`service_completed_successfully`).
+This removes the previous race where workers could start against an unmigrated schema.
 
 Full deployment, backup, and operations guidance:
 
@@ -263,7 +279,7 @@ python -m venv .venv
 . .venv/bin/activate
 pip install -r requirements.txt
 python -m pip install pip-audit
-python -m pip_audit -r requirements.txt
+python -m pip_audit -r requirements.txt --ignore-vuln PYSEC-2025-183
 PYTHONPATH=. pytest -q
 (cd frontend && npm ci && npm audit && npm run build)
 docker compose config --quiet
@@ -272,6 +288,8 @@ docker compose build --pull=false
 docker compose up -d --no-build
 curl -fsS http://localhost:8000/health
 ```
+
+`PYSEC-2025-183` is a disputed PyJWT advisory with no fixed upstream release as of 2026-05-20. CVEAgentNet keeps `PyJWT` pinned to the latest release and mitigates the weak-key concern by rejecting short/default JWT secrets in production.
 
 Expected behavior:
 

@@ -20,10 +20,16 @@ function download(filename: string, content: string, type: string) {
 
 export default function SearchPage() {
   const [results, setResults] = useState<SearchResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
   async function run(params: URLSearchParams) {
-    const payload = await searchCves(params);
-    setResults(payload.results);
+    setError(null);
+    try {
+      const payload = await searchCves(params);
+      setResults(payload.results);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Search failed.");
+    }
   }
 
   function exportJsonLd() {
@@ -56,6 +62,14 @@ export default function SearchPage() {
         </div>
       </div>
       <SearchBar onSearch={run} />
+      {error ? (
+        <p
+          role="alert"
+          className="mt-4 rounded border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad"
+        >
+          {error}
+        </p>
+      ) : null}
       <section className="mt-5 space-y-3">
         {results.map((result) => <CVECard key={result.cve.id} cve={result.cve} similarity={result.similarity_score} />)}
       </section>

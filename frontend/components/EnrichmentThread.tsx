@@ -27,31 +27,41 @@ export function EnrichmentThread({ cveId, enrichments }: { cveId: string; enrich
   const [evidence, setEvidence] = useState("");
   const [type, setType] = useState("corroboration");
   const [message, setMessage] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMessage(null);
-    await submitEnrichment(cveId, apiKey, {
-      enrichment_type: type,
-      content: {
-        summary,
-        evidence: evidence || null,
-        confidence_delta: type === "dispute" ? -0.1 : 0.1,
-        mitigation:
-          type === "mitigation"
-            ? {
-                type: "workaround",
-                description: summary,
-                patch_url: null,
-                vendor_notified: false,
-                disclosure_timeline: null
-              }
-            : null
-      }
-    });
-    setMessage("Enrichment submitted.");
-    setSummary("");
-    setEvidence("");
+    setError(null);
+    setSubmitting(true);
+    try {
+      await submitEnrichment(cveId, apiKey, {
+        enrichment_type: type,
+        content: {
+          summary,
+          evidence: evidence || null,
+          confidence_delta: type === "dispute" ? -0.1 : 0.1,
+          mitigation:
+            type === "mitigation"
+              ? {
+                  type: "workaround",
+                  description: summary,
+                  patch_url: null,
+                  vendor_notified: false,
+                  disclosure_timeline: null
+                }
+              : null
+        }
+      });
+      setMessage("Enrichment submitted.");
+      setSummary("");
+      setEvidence("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to submit enrichment.");
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -99,10 +109,22 @@ export function EnrichmentThread({ cveId, enrichments }: { cveId: string; enrich
         </div>
         <textarea className="focus-ring min-h-24 w-full rounded border border-line px-3 py-2 text-sm" placeholder="Summary" value={summary} onChange={(event) => setSummary(event.target.value)} />
         <textarea className="focus-ring min-h-24 w-full rounded border border-line px-3 py-2 text-sm" placeholder="Raw evidence" value={evidence} onChange={(event) => setEvidence(event.target.value)} />
-        <button className="focus-ring inline-flex h-10 items-center gap-2 rounded bg-ink px-4 text-sm font-semibold text-white" type="submit">
+        <button
+          className="focus-ring inline-flex h-10 items-center gap-2 rounded bg-ink px-4 text-sm font-semibold text-white disabled:opacity-60"
+          type="submit"
+          disabled={submitting}
+        >
           <Send className="h-4 w-4" />
-          Add Enrichment
+          {submitting ? "Submitting…" : "Add Enrichment"}
         </button>
+        {error ? (
+          <p
+            role="alert"
+            className="rounded border border-bad/40 bg-bad/10 px-3 py-2 text-sm text-bad"
+          >
+            {error}
+          </p>
+        ) : null}
         {message ? <p className="text-sm text-good">{message}</p> : null}
       </form>
     </section>
